@@ -1,122 +1,359 @@
 ### 介绍
 
 ---
-1. 自定义系统状态栏，时间，电量，信号强度实时更新
-2. 自定义电量图标
-2. 自定义信号强度图标
+1. 自定义系统状态栏，时间，电量，信号强度实时更新 自定义主题
+2. 自定义电量图标（低电量变红）
+2. 自定义信号强度图标（自定义信号大小颜色等）
 
 ### Example
 
 ---
-<img src="https://github.com/ZLYang110/FileSelector/blob/master/screenshot/Screenshot_20200622_135034.jpg" width = "180" height = "320" alt="图片名称"/>     <img src="https://github.com/ZLYang110/FileSelector/blob/master/screenshot/Screenshot_20200622_135013.jpg" width = "180" height = "320" alt="图片名称"/>
-<img src="https://github.com/ZLYang110/FileSelector/blob/master/screenshot/Screenshot_20200622_135143.jpg" width = "180" height = "320" alt="图片名称"/>     <img src="https://github.com/ZLYang110/FileSelector/blob/master/screenshot/Screenshot_20200622_135702.jpg" width = "180" height = "320" alt="图片名称"/>
+<img src="https://github.com/ZLYang110/SysStatusBar/tree/master/screenshot/com.zlyandroid.sysstatusbar.jpg" width = "180" height ="320" alt="图片名称"/>
+
 ---
 
 ### 可下载APK直接体验
-[Demo.apk](https://github.com/ZLYang110/FileSelector/blob/master/app/release/app-release.apk)
+[Demo.apk](https://github.com/ZLYang110/SysStatusBar/tree/master/app/release/app-release.apk)
 
 
 ---
 
 
 
-##### 一、 在文件浏览器中选择指定文件
+##### 一、自定义系统状态栏，时间，电量，信号强度实时更新
+#####  注册广播
+```
+
+
+/**
+     * 注册广播监听
+     */
+    public void registerStatusBarReceiver() {
+        mContext.registerReceiver(mReceiver, mFilter);
+        mMobileSignalStrengthListener = new MobileSignalStrengthListener();
+        mTelephonyManager.listen(mMobileSignalStrengthListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+    }
+
+    /**
+     * 取消广播监听
+     */
+    public void unregisterStatusBarReceiver() {
+        mContext.unregisterReceiver(mReceiver);
+        mTelephonyManager.listen(mMobileSignalStrengthListener, PhoneStateListener.LISTEN_NONE);
+    }
+
+```
+#####  广播内容
+```
+
+
+    private void initData(Context context) {
+
+        mContext = context;
+
+        mFilter = new IntentFilter();
+        mFilter.addAction(Intent.ACTION_TIME_TICK);
+        mFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        mFilter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION);
+        mFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
+        mFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        mFilter.addAction("android.media.VOLUME_CHANGED_ACTION");
+
+
+
+        mHandler = new Handler();
+        mTelephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+        mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+
+
+        mReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+
+                switch (action) {
+                    //时间广播
+                    case Intent.ACTION_TIME_TICK:
+                        updateTaskStatus(SystemStatusConstant.TASK_STATUS_CONTINUE);
+                        break;
+                    //网络连接状态(网络切换,网络开关)
+                    case ConnectivityManager.CONNECTIVITY_ACTION:
+                        updateNetWorkStatus();
+                        break;
+                    //WiFi信号强度变化
+                    case WifiManager.RSSI_CHANGED_ACTION:
+                        mHandler.removeCallbacks(mSignalStrengthChangeRunnable);
+                        mHandler.postDelayed(mSignalStrengthChangeRunnable, UPDATE_MIN_INTERVAL);
+                        break;
+                    //GPS连接状态(Gps开关)
+                    case LocationManager.MODE_CHANGED_ACTION:
+                    case LocationManager.PROVIDERS_CHANGED_ACTION:
+                        updateGpsStatus();
+                        break;
+                    //电量变化
+                    case Intent.ACTION_BATTERY_CHANGED:
+                        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+                        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 0);
+                        int percentage = (level * 100) / scale;
+                        updateBatteryStatus(percentage);
+                        break;
+                    //音量变化
+                    case "android.media.VOLUME_CHANGED_ACTION":
+                        updateVolumeStatus();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
+
+        //初始化各个状态, 电量不需要刻意初始化
+        updateTaskStatus(SystemStatusConstant.TASK_STATUS_OK);
+        updateNetWorkStatus();
+        updateGpsStatus();
+        updateVolumeStatus();
+
+    }
+
+```
+#####  网络信号
 ```
  /**
-     *  设置 onlyShowFolder() 只显示文件夹 后 再设置setFileTypes（）不生效
-     *  设置 onlyShowFolder() 只显示文件夹 后 默认设置了onlySelectFolder（）
-     *  设置 onlySelectFolder() 只能选择文件夹 后 默认设置了isSingle（）
-     *  设置 isSingle() 只能选择一个 后 再设置了setMaxCount（） 不生效
-     *
+     * 刷新网络信号状态
      */
- FileSelector.from(this)
-               // .onlyShowFolder()  //只显示文件夹
-                //.onlySelectFolder()  //只能选择文件夹
-               // .isSingle() // 只能选择一个
-                .setMaxCount(5) //设置最大选择数
-                .setFileTypes("png", "doc","apk", "mp3", "gif", "txt", "mp4", "zip") //设置文件类型
-                .setSortType(FileSelector.BY_NAME_ASC) //设置名字排序
-                //.setSortType(FileSelector.BY_TIME_ASC) //设置时间排序
-                //.setSortType(FileSelector.BY_SIZE_DESC) //设置大小排序
-                //.setSortType(FileSelector.BY_EXTENSION_DESC) //设置类型排序
-                .requestCode(1) //设置返回码
-                .start();
+    private void updateNetWorkStatus() {
+
+        String networkType = SystemStatusUtils.getNetworkType(mContext);
+
+        int status;
+
+        switch (networkType) {
+            case "WIFI":
+                status = getWifiLevel();
+                break;
+            case "2G":
+            case "3G":
+            case "4G":
+                status = getMobileLevel();
+                break;
+            default:
+                status = SystemStatusConstant.NET_STATUS_LOST;
+                networkType = "无信号";
+                break;
+        }
+
+
+        //没信号时，发送广播警告
+        if (networkType.equals("无信号")) {
+            SystemStatusUtils.sendBroadcast(mContext, SystemStatusConstant.Action.NET_STATUS,
+                    SystemStatusConstant.EXTRA.NET_STATUS_EXTRA, status);
+        }
+
+        mSystemStatusView.refreshSignalView(networkType, status);
+
+    }
+
+/**
+     * 获取wifi连接的强度状态
+     *
+     * @return
+     */
+    private int getWifiLevel() {
+
+        int rssi = mWifiManager.getConnectionInfo().getRssi();
+        //WIFI信号最强
+        if (rssi > -70) {
+            return SystemStatusConstant.NET_STATUS_OK;
+        } else if (rssi < -90 && rssi > -70) {
+            //WIFI信号较弱
+            return SystemStatusConstant.NET_STATUS_WEAK;
+        } else {
+            //WIFI信号微弱
+            return SystemStatusConstant.NET_STATUS_LOST;
+        }
+
+    }
+
+    /**
+     * 获取蜂窝连接的强度状态
+     *
+     * @return
+     */
+    private int getMobileLevel() {
+
+        int level = SystemStatusConstant.NET_STATUS_OK;
+
+        if (mMobileSignalStrengthListener == null
+                || mMobileSignalStrengthListener.getSignalStrength() == null) {
+            return level;
+        }
+
+        String signalStrength = mMobileSignalStrengthListener.getSignalStrength().toString();
+        String[] parts = signalStrength.split(" ");
+
+        switch (mTelephonyManager.getNetworkType()) {
+            //移动联通2G
+            case TelephonyManager.NETWORK_TYPE_GPRS:
+            case TelephonyManager.NETWORK_TYPE_EDGE:
+                level = SystemStatusUtils.getGsmLevel(parts);
+                break;
+            //电信2G
+            case TelephonyManager.NETWORK_TYPE_CDMA:
+            case TelephonyManager.NETWORK_TYPE_1xRTT:
+                break;
+            //4G网络
+            case TelephonyManager.NETWORK_TYPE_LTE:
+                level = SystemStatusUtils.getLteLevel(parts);
+                break;
+            //移动3G网络
+            case TelephonyManager.NETWORK_TYPE_HSDPA:
+                level = SystemStatusUtils.getSdcdmaLevel(parts);
+                break;
+            default:
+                level = SystemStatusConstant.NET_STATUS_OK;
+                break;
+        }
+
+        return level;
+
+    }
 ```
+#####  GPS状态
+```
+ /**
+     * 刷新Gps状态
+     */
+    private void updateGpsStatus() {
 
-##### 二、 设置只选择文件夹（文件夹默认只能选择一个）
+        int status;
+
+        if (SystemStatusUtils.isGPSOn(mContext)) {
+            status = SystemStatusConstant.GPS_STATUS_OK;
+        } else {
+            status = SystemStatusConstant.GPS_STATUS_CLOSED;
+        }
+
+
+        //发送无GPS警告广播
+        if (status == SystemStatusConstant.GPS_STATUS_CLOSED) {
+            SystemStatusUtils.sendBroadcast(mContext, SystemStatusConstant.Action.GPS_STATUS,
+                    SystemStatusConstant.EXTRA.GPS_STATUS_EXTRA, SystemStatusConstant.GPS_STATUS_CLOSED);
+        }
+
+
+        mSystemStatusView.refreshGpsView(status);
+    }
+```
+#####  音量
+```
+ /**
+     * 刷新媒体音量
+     */
+    private void updateVolumeStatus() {
+
+        int curVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+        double maxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+
+        double percentage = curVolume / maxVolume;
+
+        //低音量警告通知
+        if (percentage < 0.5) {
+            SystemStatusUtils.sendBroadcast(mContext, SystemStatusConstant.Action.VOLUME_STATUS,
+                    SystemStatusConstant.EXTRA.VOLUME_STATUS_EXTRA, curVolume);
+        }
+
+        mSystemStatusView.refreshVolumeView(curVolume, maxVolume);
+
+    }
+```
+具体请查看源码
+
+##### 二、自定义电池 （低电量变红）
 
 ```
-  FileSelector.from(this)
-                .onlySelectFolder()  //只能选择文件夹
-                .requestCode(1) //设置返回码
-                .start();
-```
+ @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);// 去锯齿
+        paint.setColor(ContextCompat.getColor(mContext, R.color.zly_color_Grey100));// 设置画笔颜色
+        float headWidth = width / 20.0f;// 电池头宽度
 
-##### 三、 设置只显示文件夹（只显示文件夹就只能选择文件夹）
+        // 画边框
+        paint.setStyle(Paint.Style.STROKE);// 设置空心矩形
+        paint.setStrokeWidth(border);
+        RectF rect_1 = new RectF(border / 2, border / 2, width - headWidth - border / 2, height - border / 2);
+        canvas.drawRoundRect(rect_1, radius, radius, paint);
 
-```
- FileSelector.from(this)
-                .onlyShowFolder()  //只能选择文件夹
-                .requestCode(1) //设置返回码
-                .start();
-```
+        // 画电池头
+        paint.setStyle(Paint.Style.FILL);
+        paint.setStrokeWidth(0);
+        RectF rect_2 = new RectF(width - headWidth - border / 2, height * 0.25f, width, height * 0.75f);
+        canvas.drawRect(rect_2, paint);
 
-##### 三、 只显示图片的文件
+        // 画电量
+        if (isCharge) {
+            paint.setColor(Color.WHITE);
+        } else {
+            if (mPower < 20) {
+                paint.setColor(Color.RED);
+            } else {
+                paint.setColor(Color.WHITE);
+            }
+        }
+        float offset = (width - headWidth - border - margin) * mPower / 100.f;
+        RectF rect_3 = new RectF(border + margin, border + margin, offset, height - border - margin);
+        canvas.drawRoundRect(rect_3, radius, radius, paint);
 
-```
- FileSelector.from(this)
-                .setMaxCount(5) //设置最大选择数
-                .setFileTypes( "png","jpg") //设置文件类型
-                .requestCode(1) //设置返回码
-                .start();
-```
-
-##### 四、 接收返回的文件数据，在 ++onActivityResult++ 方法中获取。选中文件以链表方式返回， ++EssFile++ 类为载体
-
-
-```
-@Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-       if (resultCode == RESULT_OK) {
-                   if (requestCode == 1) {
-                       ArrayList<String> essFileList = data.getStringArrayListExtra(Const.EXTRA_RESULT_SELECTION);
-                       StringBuilder builder = new StringBuilder();
-                       for (String file :
-                               essFileList) {
-                           builder.append(file).append("\n");
-                       }
-                       tv_backResult.setText(builder.toString());
-                   }
-               }
     }
 ```
 
+##### 三、自定义信号强度
 
+```
+   @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        initSize();
+        Log.i(TAG,"onDraw -- mRectWidth ="+mRectWidth+ "--mRectHeight="+mRectHeight);
+        mPaint.setStrokeWidth(unitWidth);
+        mPaint.setStrokeCap(Paint.Cap.ROUND);
+        for (int i=0;i< signalMaximum;i++){
+            if (i < signalLevel) {
+                mPaint.setColor(levelColor);
+                mPaint.setStyle(Paint.Style.FILL);
+            } else {
+                mPaint.setColor(primaryColor);
+                mPaint.setStyle(Paint.Style.FILL);
+            }
+            float x = (float) (mRectWidth * (i + 0.5) + spacing);
+            float y = (float) (mRectHeight * (signalMaximum - i)  * 0.1) ;
+            Log.i(TAG,"onDraw -- x ="+x+ "--y="+y+ "--y="+(getHeight() * 0.5));
+            canvas.drawLine(x,y,x,(float)(getHeight() * 0.5),mPaint);
+        }
+        if (!connected) {
+            mPaint.setColor(primaryColor);
+            mPaint.setStyle(Paint.Style.FILL);
+            canvas.drawLine(
+                    (float)(getWidth() * 0.2) ,
+                    (float)(getHeight() * 0.1) ,
+                    (float)(getWidth() * 0.8) ,
+                    (float)(getHeight() * 0.6) ,
+                    mPaint
+            );
+        }
+    }
 
-### 属性列表
+```
+## 联系方式
 
----
+QQ： 1833309873
+E-mail: 1833309873@QQ.com
 
-名称 | 描述 |  默认值
----|---|---
-FileTypes | 需要显示的文件类型 | 无
-SortType | 排序类型 | 按名字排序 BY_NAME_ASC
-isSingle | 是否单选 |false
-maxCount | 最大可选中数量 | 10
-request_code | 请求码 | 无
-onlyShowFolder | 是否仅只显示文件夹  | false
-onlySelectFolder | 是否只选择文件夹  | false
+## 最后
 
-
-### THANKS
-
----
-
-[陈宇明大师兄 BaseRecyclerViewAdapterHelper](https://github.com/CymChad/BaseRecyclerViewAdapterHelper)
-
-[FilePicker](https://github.com/imLibo/FilePicker)
-
+### star 请赏赐 !!!
 
 ## LICENSE
 
