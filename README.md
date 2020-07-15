@@ -8,13 +8,12 @@
 ### Example
 
 ---
-<img src="https://github.com/ZLYang110/SysStatusBar/tree/master/screenshot/com.zlyandroid.sysstatusbar.jpg" width = "180" height ="320" alt="图片名称"/>
+<img src="https://github.com/ZLYang110/SysStatusBar/blob/master/screenshot/com.zlyandroid.sysstatusbar.jpg" width = "180" height ="320" alt="图片名称"/>
 
 ---
 
 ### 可下载APK直接体验
 [Demo.apk](https://github.com/ZLYang110/SysStatusBar/tree/master/app/release/app-release.apk)
-
 
 ---
 
