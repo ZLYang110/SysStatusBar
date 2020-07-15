@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#03DAC5</color>
+    <color name="statusbar_text_red">#FB464A</color>
+    <color name="statusbar_text_yellow">#EAC200</color>
+    <color name="statusbar_text_green">#66BB6A</color>
+
+    <color name="zly_color_transparent">#00000000</color>
+    <color name="zly_color_white">#FFFFFF</color>
+    <color name="zly_color_Grey50">#FAFAFA</color>
+    <color name="zly_color_Grey100">#F5F5F5</color>
+    <color name="zly_color_Grey200">#EEEEEE</color>
+    <color name="zly_color_Grey300">#E0E0E0</color>
+    <color name="zly_color_Grey400">#bdbdbd</color>
+    <color name="zly_color_Grey500">#9e9e9e</color>
+    <color name="zly_color_Grey600">#757575</color>
+    <color name="zly_color_Grey700">#616161</color>
+    <color name="zly_color_Grey800">#3D3D3D</color>
+    <color name="zly_color_Grey900">#212121</color>
+    <color name="zly_color_black">#000000</color>
+</resources>
