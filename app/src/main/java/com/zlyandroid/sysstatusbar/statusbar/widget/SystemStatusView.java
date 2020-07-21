@@ -1,5 +1,6 @@
 package com.zlyandroid.sysstatusbar.statusbar.widget;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
@@ -31,6 +32,8 @@ public class SystemStatusView extends RelativeLayout {
     private TextView tv_system_battery;                                  //电量标示
 
     private TextView tv_system_net;                                      //网络标示
+    private SignalView sv_system_net;                                     //移动信号强度
+    private ImageView iv_system_net;                                     //WIFI
 
     private ImageView iv_system_location;                                //定位标示
 
@@ -101,6 +104,8 @@ public class SystemStatusView extends RelativeLayout {
         bv_system_battery =  findViewById(R.id.bv_system_battery);
         tv_system_battery =  findViewById(R.id.tv_system_battery);
         tv_system_net =  findViewById(R.id.tv_system_net);
+        sv_system_net =  findViewById(R.id.sv_system_net);
+        iv_system_net =  findViewById(R.id.iv_system_net);
         iv_system_location =  findViewById(R.id.iv_system_location);
         iv_system_vol = findViewById(R.id.iv_system_vol);
         mSystemStatusManager = new SystemStatusHelp(context, this);
@@ -115,11 +120,7 @@ public class SystemStatusView extends RelativeLayout {
         }else{
             tv_system_battery.setVisibility(VISIBLE);
         }
-        if(!isShowNet){
-            tv_system_net.setVisibility(GONE);
-        }else{
-            tv_system_net.setVisibility(VISIBLE);
-        }
+
         if(!isShowLocation){
             iv_system_location.setVisibility(GONE);
         }else{
@@ -339,26 +340,50 @@ public class SystemStatusView extends RelativeLayout {
     public void refreshSignalView(String networkType, int status) {
         if(!isShowNet)return;
         int textColorId;
-
+        Log.i("refreshSignalView","refreshSignalView:"+networkType+" ==status=="+status);
         //网络状态不改变时,不做任何界面刷新处理
         if (tv_system_net.getTag() != null
                 && tv_system_net.getTag().toString().equals(networkType + status)) {
             return;
         }
+        if(networkType.equals("无信号")){
+            sv_system_net.setVisibility(GONE);
+            iv_system_net.setVisibility(GONE);
+            tv_system_net.setVisibility(VISIBLE);
+        }else if(networkType.equals("WIFI")){
+            iv_system_net.setVisibility(VISIBLE);
+            sv_system_net.setVisibility(GONE);
+            tv_system_net.setVisibility(GONE);
+        }else{
+            iv_system_net.setVisibility(GONE);
+            sv_system_net.setVisibility(VISIBLE);
+            tv_system_net.setVisibility(GONE);
+        }
 
         switch (status) {
             //正常绿色
             case SystemStatusConstant.NET_STATUS_OK:
-                textColorId = themeColor;
+                textColorId = R.color.statusbar_text_yellow;
+                if(sv_system_net.getVisibility() == VISIBLE){
+                    sv_system_net.setSignalLevel(4);
+                }
+
+
                 break;
             //微弱黄色
             case SystemStatusConstant.NET_STATUS_WEAK:
                 textColorId = R.color.statusbar_text_yellow;
+                if(sv_system_net.getVisibility() == VISIBLE){
+                    sv_system_net.setSignalLevel(2);
+                }
                 break;
             //丢失红色
             case SystemStatusConstant.NET_STATUS_LOST:
             case SystemStatusConstant.NET_STATUS_CLOSED:
                 textColorId = R.color.statusbar_text_red;
+                if(sv_system_net.getVisibility() == VISIBLE){
+                    sv_system_net.setSignalLevel(0);
+                }
                 break;
             //默认红色
             default:
@@ -367,7 +392,7 @@ public class SystemStatusView extends RelativeLayout {
         }
 
         tv_system_net.setText(networkType);
-        tv_system_net.setTextColor(textColorId);
+        //tv_system_net.setTextColor(textColorId);
         tv_system_net.setTag(networkType + status);
 
     }

@@ -156,9 +156,9 @@ public class SignalView  extends View {
         }
     }
 
-    public void setSignalLevel(int level ) throws Exception {
+    public void setSignalLevel(int level )   {
         if (level > signalMaximum){
-            throw new Exception("setSignalLevel method value error,can not exceed settings signalMaximum!");
+            level = signalMaximum;
         }
         if (signalLevel != level){
             signalLevel = level;
