@@ -14,12 +14,15 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 
+import com.zlyandroid.sysstatusbar.ProApplication;
 import com.zlyandroid.sysstatusbar.statusbar.widget.SystemStatusView;
 
 import java.util.Calendar;
 
 /**
  * Created by zhangliyang
+ * @data 2020/08/19
+ * @author 使用之前请确保已经注册广播监听，
  */
 public class SystemStatusHelp {
 
@@ -33,9 +36,10 @@ public class SystemStatusHelp {
     private WifiManager mWifiManager;
     private AudioManager mAudioManager;
     private MobileSignalStrengthListener mMobileSignalStrengthListener;
-    private SystemStatusView mSystemStatusView;
 
-
+    //电量
+    int level;
+    int scale = 0;
     /**
      * 信号强度状态更新线程
      */
@@ -46,10 +50,16 @@ public class SystemStatusHelp {
         }
     };
 
+    private static class Holder {
+        private static final SystemStatusHelp INSTANCE = new SystemStatusHelp(ProApplication.getContext());
+    }
+
+    public static SystemStatusHelp getInstance() {
+        return Holder.INSTANCE;
+    }
 
 
-    public SystemStatusHelp(Context context, SystemStatusView view) {
-        mSystemStatusView = view;
+    private SystemStatusHelp(Context context) {
         initData(context);
     }
 
@@ -119,8 +129,8 @@ public class SystemStatusHelp {
                         break;
                     //电量变化
                     case Intent.ACTION_BATTERY_CHANGED:
-                        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-                        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 0);
+                         level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+                         scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 0);
                         int percentage = (level * 100) / scale;
                         updateBatteryStatus(percentage);
                         break;
@@ -134,15 +144,21 @@ public class SystemStatusHelp {
             }
         };
 
+
+
+    }
+
+    public void refreshAll(){
         //初始化各个状态, 电量不需要刻意初始化
+        if(scale!=0){
+            int percentage = (level * 100) / scale;
+            updateBatteryStatus(percentage);
+        }
         updateTaskStatus(SystemStatusConstant.TASK_STATUS_OK);
         updateNetWorkStatus();
         updateGpsStatus();
         updateVolumeStatus();
-
     }
-
-
     /**
      * 刷新媒体音量
      */
@@ -159,7 +175,10 @@ public class SystemStatusHelp {
                     SystemStatusConstant.EXTRA.VOLUME_STATUS_EXTRA, curVolume);
         }
 
-        mSystemStatusView.refreshVolumeView(curVolume, maxVolume);
+        if(mOnVolumeStatusListener!=null){
+            mOnVolumeStatusListener.onVolumeStatus(curVolume, maxVolume);
+        }
+
 
     }
 
@@ -178,7 +197,9 @@ public class SystemStatusHelp {
                     SystemStatusConstant.EXTRA.BATTERY_STATUS_EXTRA, percentage);
         }
 
-        mSystemStatusView.refreshBatteryView(percentage);
+        if(mOnBatteryStatusListener!=null){
+            mOnBatteryStatusListener.onBatteryStatus(percentage);
+        }
 
     }
 
@@ -191,7 +212,10 @@ public class SystemStatusHelp {
     private void updateTaskStatus(int status) {
         Calendar calendar = Calendar.getInstance();
         String time = calendar.get(Calendar.HOUR_OF_DAY) + ":" + String.format("%02d", calendar.get(Calendar.MINUTE));
-        mSystemStatusView.refreshTimeView(time, status);
+        if(mOnTimeStatusListener!=null){
+            mOnTimeStatusListener.onTimeStatus(time, status);
+        }
+
     }
 
 
@@ -215,8 +239,10 @@ public class SystemStatusHelp {
                     SystemStatusConstant.EXTRA.GPS_STATUS_EXTRA, SystemStatusConstant.GPS_STATUS_CLOSED);
         }
 
+        if(mOnGpsStatusListener!=null){
+            mOnGpsStatusListener.onGpsStatus(status);
+        }
 
-        mSystemStatusView.refreshGpsView(status);
     }
 
 
@@ -251,8 +277,9 @@ public class SystemStatusHelp {
                     SystemStatusConstant.EXTRA.NET_STATUS_EXTRA, status);
         }
 
-        mSystemStatusView.refreshSignalView(networkType, status);
-
+        if(mOnNetWorkStatusListener != null){
+            mOnNetWorkStatusListener.onNetWorkStatus(networkType,status);
+        }
     }
 
 
@@ -349,6 +376,39 @@ public class SystemStatusHelp {
 
     }
 
-
-
+    private OnVolumeStatusListener mOnVolumeStatusListener = null;//声音状态监听
+    private OnBatteryStatusListener mOnBatteryStatusListener = null;//电量状态监听
+    private OnTimeStatusListener mOnTimeStatusListener = null;//时间更新
+    private OnGpsStatusListener mOnGpsStatusListener = null;//GPS更新
+    private OnNetWorkStatusListener mOnNetWorkStatusListener = null;//网络状态
+    public void setOnVolumeStatusListener(OnVolumeStatusListener onVolumeStatusListener) {
+        mOnVolumeStatusListener = onVolumeStatusListener;
+    }
+    public void setOnBatteryStatusListener(OnBatteryStatusListener onBatteryStatusListener) {
+        mOnBatteryStatusListener = onBatteryStatusListener;
+    }
+    public void setOnTimeStatusListener(OnTimeStatusListener onTimeStatusListener) {
+        mOnTimeStatusListener = onTimeStatusListener;
+    }
+    public void setOnGpsStatusListener(OnGpsStatusListener onGpsStatusListener) {
+        mOnGpsStatusListener = onGpsStatusListener;
+    }
+    public void setOnNetWorkStatusListener(OnNetWorkStatusListener onNotWorkStatusListener) {
+        mOnNetWorkStatusListener = onNotWorkStatusListener;
+    }
+    public interface OnVolumeStatusListener {
+        void onVolumeStatus(int curVolume , double maxVolume);
+    }
+    public interface OnBatteryStatusListener {
+        void onBatteryStatus(int percentage);
+    }
+    public interface OnTimeStatusListener {
+        void onTimeStatus(String time,int status);
+    }
+    public interface OnGpsStatusListener {
+        void onGpsStatus( int status);
+    }
+    public interface OnNetWorkStatusListener {
+        void onNetWorkStatus( String networkType,int status);
+    }
 }

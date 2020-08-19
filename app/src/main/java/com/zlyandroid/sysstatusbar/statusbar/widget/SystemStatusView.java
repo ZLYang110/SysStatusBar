@@ -41,7 +41,6 @@ public class SystemStatusView extends RelativeLayout {
 
 
 
-    private SystemStatusHelp mSystemStatusManager;                //系统状态管理
     private Context mContext;
 
     private boolean isShowBattery = true;//是否显示电量
@@ -84,14 +83,14 @@ public class SystemStatusView extends RelativeLayout {
      * 注册广播监听
      */
     public void registerStatusBarReceiver() {
-        mSystemStatusManager.registerStatusBarReceiver();
+        SystemStatusHelp.getInstance().registerStatusBarReceiver();
     }
 
     /**
      * 取消广播监听
      */
     public void unregisterStatusBarReceiver() {
-        mSystemStatusManager.unregisterStatusBarReceiver();
+        SystemStatusHelp.getInstance().unregisterStatusBarReceiver();
     }
 
 
@@ -108,7 +107,6 @@ public class SystemStatusView extends RelativeLayout {
         iv_system_net =  findViewById(R.id.iv_system_net);
         iv_system_location =  findViewById(R.id.iv_system_location);
         iv_system_vol = findViewById(R.id.iv_system_vol);
-        mSystemStatusManager = new SystemStatusHelp(context, this);
 
         if(!isShowBattery){
             ly_system_battery.setVisibility(GONE);
@@ -139,6 +137,38 @@ public class SystemStatusView extends RelativeLayout {
             themeColor= Color.WHITE;
         }
 
+        SystemStatusHelp.getInstance().setOnVolumeStatusListener(new SystemStatusHelp.OnVolumeStatusListener() {
+            @Override
+            public void onVolumeStatus(int curVolume, double maxVolume) {
+                refreshVolumeView(curVolume,maxVolume);
+            }
+        });
+        SystemStatusHelp.getInstance().setOnBatteryStatusListener(new SystemStatusHelp.OnBatteryStatusListener() {
+            @Override
+            public void onBatteryStatus(int percentage) {
+                refreshBatteryView(percentage);
+            }
+        });
+        SystemStatusHelp.getInstance().setOnTimeStatusListener(new SystemStatusHelp.OnTimeStatusListener() {
+            @Override
+            public void onTimeStatus(String time, int status) {
+                refreshTimeView(time,status);
+            }
+        });
+
+        SystemStatusHelp.getInstance().setOnGpsStatusListener(new SystemStatusHelp.OnGpsStatusListener() {
+            @Override
+            public void onGpsStatus(int status) {
+                refreshGpsView(status);
+            }
+        });
+        SystemStatusHelp.getInstance().setOnNetWorkStatusListener(new SystemStatusHelp.OnNetWorkStatusListener() {
+            @Override
+            public void onNetWorkStatus(String networkType, int status) {
+                refreshSignalView(networkType,status);
+            }
+        });
+        SystemStatusHelp.getInstance().refreshAll();
     }
 
 
@@ -266,7 +296,7 @@ public class SystemStatusView extends RelativeLayout {
         Log.d("refreshBatteryView","================"+percentage);
         bv_system_battery.setPower(percentage);
         tv_system_battery.setText(batteryInfo);
-        tv_system_battery.setTextColor(textColorId);
+      //  tv_system_battery.setTextColor(textColorId);
 
     }
 
@@ -275,7 +305,7 @@ public class SystemStatusView extends RelativeLayout {
      * 刷新时间布局
      */
     public void refreshTimeView(String time, int status) {
-
+        Log.d("refreshTimeView","================"+time);
         //只刷新时间数值,颜色不变
         if (status == SystemStatusConstant.TASK_STATUS_CONTINUE) {
             tv_system_time.setText(time);
@@ -300,6 +330,7 @@ public class SystemStatusView extends RelativeLayout {
                 break;
         }
 */
+
         tv_system_time.setText(time);
 
     }

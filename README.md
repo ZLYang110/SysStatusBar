@@ -149,9 +149,19 @@
                     SystemStatusConstant.EXTRA.NET_STATUS_EXTRA, status);
         }
 
-        mSystemStatusView.refreshSignalView(networkType, status);
+       if(mOnNetWorkStatusListener != null){
+                   mOnNetWorkStatusListener.onNetWorkStatus(networkType,status);
+               }
 
     }
+
+    //获取网络信号监听
+               SystemStatusHelp.getInstance().setOnNetWorkStatusListener(new SystemStatusHelp.OnNetWorkStatusListener() {
+                          @Override
+                          public void onNetWorkStatus(String networkType, int status) {
+                              refreshSignalView(networkType,status);
+                          }
+                      });
 
 /**
      * 获取wifi连接的强度状态
@@ -241,8 +251,19 @@
         }
 
 
-        mSystemStatusView.refreshGpsView(status);
+        if(mOnGpsStatusListener!=null){
+                   mOnGpsStatusListener.onGpsStatus(status);
+               }
     }
+
+
+    //获取GPS监听
+            SystemStatusHelp.getInstance().setOnGpsStatusListener(new SystemStatusHelp.OnGpsStatusListener() {
+                      @Override
+                      public void onGpsStatus(int status) {
+                          refreshGpsView(status);
+                      }
+                  });
 ```
 #####  音量
 ```
@@ -262,9 +283,23 @@
                     SystemStatusConstant.EXTRA.VOLUME_STATUS_EXTRA, curVolume);
         }
 
-        mSystemStatusView.refreshVolumeView(curVolume, maxVolume);
+
+        if(mOnVolumeStatusListener!=null){
+            mOnVolumeStatusListener.onVolumeStatus(curVolume, maxVolume);
+        }
+
 
     }
+
+
+      //获取声音监听
+         SystemStatusHelp.getInstance().setOnVolumeStatusListener(new SystemStatusHelp.OnVolumeStatusListener() {
+                    @Override
+                    public void onVolumeStatus(int curVolume, double maxVolume) {
+                        refreshVolumeView(curVolume,maxVolume);
+                    }
+                });
+
 ```
 具体请查看源码
 

@@ -54,7 +54,7 @@ public class BatteryView  extends View {
         super.onDraw(canvas);
         Paint paint = new Paint();
         paint.setAntiAlias(true);// 去锯齿
-        paint.setColor(ContextCompat.getColor(mContext, R.color.zly_color_Grey100));// 设置画笔颜色
+        paint.setColor(ContextCompat.getColor(mContext, R.color.zly_color_Grey300));// 设置画笔颜色
         float headWidth = width / 20.0f;// 电池头宽度
 
         // 画边框
@@ -71,12 +71,12 @@ public class BatteryView  extends View {
 
         // 画电量
         if (isCharge) {
-            paint.setColor(Color.WHITE);
+            paint.setColor(ContextCompat.getColor(mContext, R.color.zly_color_Grey400));
         } else {
             if (mPower < 20) {
                 paint.setColor(Color.RED);
             } else {
-                paint.setColor(Color.WHITE);
+                paint.setColor(ContextCompat.getColor(mContext, R.color.zly_color_Grey400));
             }
         }
         float offset = (width - headWidth - border - margin) * mPower / 100.f;
